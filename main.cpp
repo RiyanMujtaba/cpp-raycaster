@@ -144,14 +144,21 @@ int main() {
     bool running = true;
     SDL_Event e;
 
-    const double FOV   = M_PI / 3.0; // 60°
+    const double FOV      = M_PI / 3.0; // 60°
     const double HALF_FOV = FOV / 2.0;
+    const double MOUSE_SENSITIVITY = 0.0015;
+
+    // Capture mouse for look
+    SDL_SetRelativeMouseMode(SDL_TRUE);
 
     while (running) {
         // ── Events ──────────────────────────────────────────────────────────
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) running = false;
             if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_ESCAPE) running = false;
+            // Mouse look
+            if (e.type == SDL_MOUSEMOTION)
+                player.angle += e.motion.xrel * MOUSE_SENSITIVITY;
         }
 
         // ── Input ────────────────────────────────────────────────────────────
@@ -175,8 +182,6 @@ int main() {
             nx += cos(player.angle + M_PI / 2) * player.moveSpeed;
             ny += sin(player.angle + M_PI / 2) * player.moveSpeed;
         }
-        if (keys[SDL_SCANCODE_LEFT])  player.angle -= player.rotSpeed;
-        if (keys[SDL_SCANCODE_RIGHT]) player.angle += player.rotSpeed;
 
         // Collision: only move if new cell is empty
         if (MAP[(int)ny][(int)player.x] == 0) player.y = ny;
