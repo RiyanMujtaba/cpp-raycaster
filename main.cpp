@@ -36,40 +36,44 @@ inline uint32_t dimC(uint32_t c,float d){
 }
 
 // ─── Map ─────────────────────────────────────────────────────────────────────
-static const int MW=24,MH=24;
+static const int MW=28,MH=28;
 static int MAP[MH][MW]={
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-    {1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,2,2,2,0,0,0,2,2,1,0,0,2,0,0,0,0,2,0,0,0,1},
-    {1,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,2,0,0,0,1},
-    {1,0,0,0,0,3,3,3,3,3,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,3,0,0,0,3,0,0,1,1,1,1,0,1,1,1,1,0,0,1},
-    {1,0,0,0,0,3,0,0,0,3,0,0,1,0,0,0,0,0,0,0,1,0,0,1},
-    {1,0,0,0,0,3,0,0,0,3,0,0,1,0,0,0,0,0,0,0,1,0,0,1},
-    {1,0,0,0,0,3,3,3,3,3,0,0,1,0,0,0,0,0,0,0,1,0,0,1},
-    {1,1,1,0,1,1,1,1,1,1,1,0,1,0,0,0,0,0,0,0,1,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,4,0,0,1,0,0,1},
-    {1,0,4,4,0,0,0,0,0,0,0,0,0,0,0,0,4,4,0,0,1,1,1,1},
-    {1,0,4,4,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,3,0,0,0,3,0,0,0,0,1,0,0,0,0,0,0,4,0,0,0,1},
-    {1,0,0,3,0,0,0,3,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
-    {1,0,0,3,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,1},
-    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,2,0,2,0,0,0,0,0,0,0,1,0,0,0,2,2,2,2,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,2,0,0,0,0,0,0,1},
+    {1,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,2,0,0,2,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,3,3,3,3,3,1,0,0,0,2,2,2,2,0,0,0,0,0,0,1},
+    {1,1,1,0,1,1,1,0,3,0,0,0,3,1,1,0,1,1,0,1,1,1,0,1,1,1,0,1},
+    {1,0,0,0,0,0,1,0,3,0,0,0,3,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1},
+    {1,0,4,0,0,0,1,0,3,0,0,0,3,0,0,0,0,0,0,0,0,1,0,0,4,0,0,1},
+    {1,0,0,0,0,0,1,0,3,3,3,3,3,0,0,0,0,0,0,0,0,1,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,0,1},
+    {1,1,1,0,1,1,1,1,1,0,1,1,1,1,1,1,1,0,1,1,1,1,1,1,0,1,1,1},
+    {1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,2,2,0,0,0,1,0,0,0,4,0,0,0,1,0,0,0,0,2,2,0,0,0,0,1},
+    {1,0,0,2,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,2,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,3,0,3,0,0,0,1,0,0,0,4,0,0,0,1,0,0,0,3,0,3,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,1,1,0,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,1},
+    {1,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,1},
+    {1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
+    {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
 };
 
 // ─── Textures ─────────────────────────────────────────────────────────────────
 static uint32_t T_WALL[4][TEX*TEX];
 static uint32_t T_ENEMY[TEX*TEX];   // orange robot
 static uint32_t T_ALLY [TEX*TEX];   // cyan robot
-static uint32_t T_BULLET_F[8*8];    // friendly bullet (yellow)
-static uint32_t T_BULLET_E[8*8];    // enemy bullet (red)
+static uint32_t T_BULLET_F[4*4];    // friendly bullet (yellow)
+static uint32_t T_BULLET_E[4*4];    // enemy bullet (red)
 
 static void buildRobotSprite(uint32_t* S, int hr, int hg, int hb, int br, int bg, int bb) {
     memset(S, 0, TEX*TEX*sizeof(uint32_t));
@@ -112,9 +116,9 @@ static void genTextures(){
     }
     buildRobotSprite(T_ENEMY, 255,140,30,  220,160,40);   // orange enemy
     buildRobotSprite(T_ALLY,   80,230,230,   50,160,220);  // cyan ally
-    // Bullet sprites (8x8)
-    for(int i=0;i<64;i++) T_BULLET_F[i]=rgb(255,240,80);
-    for(int i=0;i<64;i++) T_BULLET_E[i]=rgb(255,60,60);
+    // Bullet sprites (4x4 — small)
+    for(int i=0;i<16;i++) T_BULLET_F[i]=rgb(255,240,80);
+    for(int i=0;i<16;i++) T_BULLET_E[i]=rgb(255,60,60);
     srand((unsigned)time(nullptr));
 }
 
@@ -172,12 +176,17 @@ static float zBuf[W];
 static void resetGame(Mode m){
     gMode=m; gState=PLAYING; gTime=0; gKills=0;
     player={2.5,2.5,0,0,100,0,0,0,0.055};
-    enemies={{4.5,10.5},{10.5,2.5},{18.5,5.5},{14.5,10.5},{6.5,19.5},{20.5,14.5},{11.5,20.5}};
+    enemies={
+        {5.5,5.5},{22.5,2.5},{24.5,10.5},
+        {15.5,10.5},{6.5,20.5},{22.5,18.5},
+        {11.5,22.5},{18.5,24.5},{4.5,15.5},
+        {25.5,24.5}  // 10 enemies now
+    };
     bullets.clear();
     allies.clear();
     if(m==TEAM){
-        allies.push_back({3.5,2.5}); allies.push_back({2.5,3.5});
-        allies.push_back({3.5,3.5}); allies.push_back({4.5,3.5});
+        allies.push_back({3.5,2.5}); allies.push_back({2.5,4.5});
+        allies.push_back({4.5,3.5}); allies.push_back({3.5,5.5});
     }
 }
 
@@ -274,26 +283,27 @@ static void updateEnemies(float dt){
             if(ad<bestAD){bestAD=ad;bestAlly=i;}
         }
 
-        bool chasePlayer = dist < 8.0;
-        bool chaseAlly   = bestAlly>=0 && bestAD < 8.0 && bestAD < dist;
+        bool chasePlayer = dist < 12.0;   // wider aggro range
+        bool chaseAlly   = bestAlly>=0 && bestAD < 12.0 && bestAD < dist;
 
         if(chasePlayer||chaseAlly){
             e.chasing=true;
             double tdx,tdy,td;
             if(chaseAlly&&!chasePlayer){tdx=allies[bestAlly].x-e.x;tdy=allies[bestAlly].y-e.y;td=bestAD;}
             else{tdx=dx;tdy=dy;td=dist;}
-            moveAgent(e.x,e.y,tdx/td,tdy/td,0.018);
-            // Shoot
+            moveAgent(e.x,e.y,tdx/td,tdy/td,0.026); // faster chase
+            // Shoot — tighter spread, shorter cooldown
             e.shootTimer-=dt;
-            if(e.shootTimer<=0&&td<7.0){
-                double ang=atan2(tdy,tdx)+(((rand()%100)-50)/1000.0);
+            if(e.shootTimer<=0&&td<10.0){
+                double spread=((rand()%60)-30)/1000.0; // tighter aim
+                double ang=atan2(tdy,tdx)+spread;
                 fireBullet(e.x,e.y,ang,false);
-                e.shootTimer=2.0f+(rand()%10)/10.f;
+                e.shootTimer=1.1f+(rand()%8)/10.f;    // shoots more often
             }
         } else {
             e.chasing=false; e.patrolTimer-=dt;
-            if(e.patrolTimer<=0){e.patrolAngle=(rand()%628)/100.;e.patrolTimer=1.2f+(rand()%2000)/1000.f;}
-            moveAgent(e.x,e.y,cos(e.patrolAngle),sin(e.patrolAngle),0.010);
+            if(e.patrolTimer<=0){e.patrolAngle=(rand()%628)/100.;e.patrolTimer=0.8f+(rand()%1200)/1000.f;}
+            moveAgent(e.x,e.y,cos(e.patrolAngle),sin(e.patrolAngle),0.014); // faster patrol
         }
         // Step sound
         e.stepTimer-=dt;
@@ -310,7 +320,7 @@ static void updateAllies(float dt){
     for(auto& a:allies){
         if(!a.alive)continue;
         a.bobTime+=dt*5.f;
-        // Find nearest enemy
+        // Always find nearest enemy — no range limit, allies always hunt
         int best=-1; double bestD=999;
         for(int i=0;i<(int)enemies.size();i++){
             if(!enemies[i].alive)continue;
@@ -318,21 +328,21 @@ static void updateAllies(float dt){
             double d=sqrt(dx*dx+dy*dy);
             if(d<bestD){bestD=d;best=i;}
         }
-        if(best>=0&&bestD<10.0){
+        if(best>=0){
             double dx=enemies[best].x-a.x,dy=enemies[best].y-a.y;
             a.angle=atan2(dy,dx);
-            if(bestD>2.5) moveAgent(a.x,a.y,dx/bestD,dy/bestD,0.014);
+            // Always move toward enemy unless very close
+            if(bestD>2.2) moveAgent(a.x,a.y,dx/bestD,dy/bestD,0.022);
+            // Shoot when in range — aggressive cooldown
             a.shootTimer-=dt;
-            if(a.shootTimer<=0&&bestD<8.0){
-                fireBullet(a.x,a.y,a.angle+(((rand()%100)-50)/1200.0),true);
-                if(sndShoot){Mix_VolumeChunk(sndShoot,MIX_MAX_VOLUME/3);Mix_PlayChannel(6,sndShoot,0);}
-                a.shootTimer=0.8f+(rand()%10)/10.f;
+            if(a.shootTimer<=0&&bestD<14.0){
+                double spread=((rand()%40)-20)/1000.0;
+                fireBullet(a.x,a.y,a.angle+spread,true);
+                if(sndShoot){Mix_VolumeChunk(sndShoot,MIX_MAX_VOLUME/4);Mix_PlayChannel(6,sndShoot,0);}
+                a.shootTimer=0.5f+(rand()%6)/10.f;
             }
-        } else {
-            a.patrolTimer-=dt;
-            if(a.patrolTimer<=0){a.patrolAngle=(rand()%628)/100.;a.patrolTimer=1.f+(rand()%1500)/1000.f;}
-            moveAgent(a.x,a.y,cos(a.patrolAngle),sin(a.patrolAngle),0.008);
         }
+        // If no enemies left allies just idle (they won!)
     }
 }
 
@@ -378,12 +388,12 @@ static void renderFrame(uint32_t* px,const Player& p,float bob){
         int bobShift=0;
         if(s.type==0){const Enemy& e=enemies[s.idx];sx=e.x-p.x;sy=e.y-p.y;texData=T_ENEMY;texW=texH=TEX;bobShift=(int)(sinf(e.bobTime)*3);}
         else if(s.type==1){const Ally& a=allies[s.idx];sx=a.x-p.x;sy=a.y-p.y;texData=T_ALLY;texW=texH=TEX;bobShift=(int)(sinf(a.bobTime)*3);}
-        else{const Bullet& b=bullets[s.idx];sx=b.x-p.x;sy=b.y-p.y;texData=b.friendly?T_BULLET_F:T_BULLET_E;texW=texH=8;}
+        else{const Bullet& b=bullets[s.idx];sx=b.x-p.x;sy=b.y-p.y;texData=b.friendly?T_BULLET_F:T_BULLET_E;texW=texH=4;}
 
         double tX=inv*(dirY*sx-dirX*sy),tY=inv*(-plnY*sx+plnX*sy);
         if(tY<=0.05)continue;
         int scrX=(int)((W/2)*(1.+tX/tY));
-        int sprH=abs((int)(H/tY)),sprW=(texW==TEX)?sprH:(int)(H/tY/4);
+        int sprH=abs((int)(H/tY)),sprW=(texW==TEX)?sprH:(int)(H/tY/8); // bullets are tiny
         int dys=hor-sprH/2+bobShift,dye=hor+sprH/2+bobShift;
         int dxs=scrX-sprW/2,dxe=scrX+sprW/2;
 
