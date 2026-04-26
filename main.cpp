@@ -171,7 +171,7 @@ static float zBuf[W];
 
 static void resetGame(Mode m){
     gMode=m; gState=PLAYING; gTime=0; gKills=0;
-    player={2.5,2.5,0,0,100,0,0,0};
+    player={2.5,2.5,0,0,100,0,0,0,0.055};
     enemies={{4.5,10.5},{10.5,2.5},{18.5,5.5},{14.5,10.5},{6.5,19.5},{20.5,14.5},{11.5,20.5}};
     bullets.clear();
     allies.clear();
@@ -412,10 +412,6 @@ static void renderFrame(uint32_t* px,const Player& p,float bob){
     for(int y=gy-3;y<gy+20;y++) for(int x=gx-14;x<gx+12;x++) if(y>=0&&y<H&&x>=0&&x<W)px[y*W+x]=rgb(90,70,55);
     for(int x=gx-13;x<gx+11;x++) if(gy-3>=0&&gy-3<H) px[(gy-3)*W+x]=rgb(130,100,80);
 
-    // Hurt vignette if low HP
-    if(player.hp<40){
-        SDL_SetRenderDrawBlendMode(nullptr,SDL_BLENDMODE_BLEND); // no-op, just marks that we need it in main
-    }
 }
 
 // ─── Text helper ──────────────────────────────────────────────────────────────
