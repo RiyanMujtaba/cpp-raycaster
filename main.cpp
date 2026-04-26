@@ -625,6 +625,7 @@ int main(){
                 }
             }
             if(ev.type==SDL_MOUSEMOTION&&gState==MENU){mousex=ev.motion.x/2;mousey=ev.motion.y/2;}
+            if(ev.type==SDL_MOUSEBUTTONUP&&gState==MENU){mousex=ev.button.x/2;mousey=ev.button.y/2;}
             if(ev.type==SDL_MOUSEMOTION&&gState==PLAYING){
                 player.angle+=ev.motion.xrel*SENS;
                 player.pitch-=ev.motion.yrel*1;
@@ -633,10 +634,12 @@ int main(){
             }
             if(ev.type==SDL_MOUSEBUTTONDOWN){
                 if(gState==MENU){
+                    // Use the actual click coordinates, converted to logical resolution
+                    int cx=ev.button.x/2, cy=ev.button.y/2;
                     SDL_Rect solo={W/2-130,130,260,52};
                     SDL_Rect team={W/2-130,198,260,52};
-                    if(mousex>=solo.x&&mousex<solo.x+solo.w&&mousey>=solo.y&&mousey<solo.y+solo.h){resetGame(SOLO);SDL_SetRelativeMouseMode(SDL_TRUE);}
-                    if(mousex>=team.x&&mousex<team.x+team.w&&mousey>=team.y&&mousey<team.y+team.h){resetGame(TEAM);SDL_SetRelativeMouseMode(SDL_TRUE);}
+                    if(cx>=solo.x&&cx<solo.x+solo.w&&cy>=solo.y&&cy<solo.y+solo.h){resetGame(SOLO);SDL_SetRelativeMouseMode(SDL_TRUE);}
+                    if(cx>=team.x&&cx<team.x+team.w&&cy>=team.y&&cy<team.y+team.h){resetGame(TEAM);SDL_SetRelativeMouseMode(SDL_TRUE);}
                 }
                 if(gState==PLAYING&&ev.button.button==SDL_BUTTON_LEFT) playerShoot();
             }
