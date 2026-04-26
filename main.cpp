@@ -464,28 +464,24 @@ static void renderMenu(SDL_Renderer* ren,TTF_Font* big,TTF_Font* med,TTF_Font* s
     SDL_SetRenderDrawColor(ren,0,200,255,180);
     SDL_RenderDrawLine(ren,W/2-120,112,W/2+120,112);
 
-    // Mode buttons
-    SDL_Rect solo={W/2-130,130,260,52};
-    SDL_Rect team={W/2-130,198,260,52};
-    bool hSolo=(mx>=solo.x&&mx<solo.x+solo.w&&my>=solo.y&&my<solo.y+solo.h);
-    bool hTeam=(mx>=team.x&&mx<team.x+team.w&&my>=team.y&&my<team.y+team.h);
+    // Mode buttons — big, full-width bands so clicking anywhere in them works
+    int sc=(int)(180+50*sinf(t*3));
+    int tc=(int)(180+50*sinf(t*3+1.f));
 
-    // Solo button
-    fillRect(ren,solo.x,solo.y,solo.w,solo.h,0,hSolo?60:30,hSolo?80:50,220);
-    int sc=hSolo?255:(int)(180+50*sinf(t*3));
-    drawRect(ren,solo.x,solo.y,solo.w,solo.h,0,sc,sc,2);
-    drawText(ren,med,"SOLO  MODE",solo.x+solo.w/2,solo.y+10,{0,(uint8_t)sc,(uint8_t)sc,255},true);
-    drawText(ren,sm,"You vs all enemies",solo.x+solo.w/2,solo.y+32,{100,200,200,200},true);
+    // Solo band (click anywhere here)
+    fillRect(ren,0,118,W,80,0,40,55,210);
+    drawRect(ren,4,120,W-8,76,0,sc,sc,2);
+    drawText(ren,med,"[ 1 ]  SOLO MODE  —  Click here",W/2,130,{0,(uint8_t)sc,(uint8_t)sc,255},true);
+    drawText(ren,sm,"You vs all 7 enemies",W/2,158,{100,200,200,200},true);
 
-    // Team button
-    fillRect(ren,team.x,team.y,team.w,team.h,hTeam?60:30,0,hTeam?80:50,220);
-    int tc=hTeam?255:(int)(180+50*sinf(t*3+1.f));
-    drawRect(ren,team.x,team.y,team.w,team.h,(uint8_t)tc,0,(uint8_t)tc,2);
-    drawText(ren,med,"TEAM  MODE",team.x+team.w/2,team.y+10,{(uint8_t)tc,80,(uint8_t)tc,255},true);
-    drawText(ren,sm,"You + 4 allies vs 7 enemies",team.x+team.w/2,team.y+32,{180,100,200,200},true);
+    // Team band
+    fillRect(ren,0,208,W,80,40,0,55,210);
+    drawRect(ren,4,210,W-8,76,(uint8_t)tc,0,(uint8_t)tc,2);
+    drawText(ren,med,"[ 2 ]  TEAM MODE  —  Click here",W/2,220,{(uint8_t)tc,80,(uint8_t)tc,255},true);
+    drawText(ren,sm,"You + 4 allies vs 7 enemies",W/2,248,{180,100,200,200},true);
 
     // Controls hint
-    drawText(ren,sm,"WASD - Move   Mouse - Look   LMB - Shoot   ESC - Quit",W/2,285,{80,120,120,200},true);
+    drawText(ren,sm,"Press 1 or 2  |  WASD move  |  Mouse look  |  LMB shoot  |  ESC quit",W/2,308,{80,120,120,200},true);
 
     drawScanlines(ren);
 }
@@ -620,12 +616,16 @@ int main(){
                     if(gState==PLAYING){gState=MENU;SDL_SetRelativeMouseMode(SDL_FALSE);}
                     else running=false;
                 }
-                if(ev.key.keysym.sym==SDLK_RETURN&&(gState==WIN||gState==LOSE)){
-                    gState=MENU;SDL_SetRelativeMouseMode(SDL_FALSE);
+                if(gState==MENU){
+                    if(ev.key.keysym.sym==SDLK_1||ev.key.keysym.sym==SDLK_KP_1){resetGame(SOLO);SDL_SetRelativeMouseMode(SDL_TRUE);}
+                    if(ev.key.keysym.sym==SDLK_2||ev.key.keysym.sym==SDLK_KP_2){resetGame(TEAM);SDL_SetRelativeMouseMode(SDL_TRUE);}
+                }
+                if(ev.key.keysym.sym==SDLK_RETURN||(ev.key.keysym.sym==SDLK_SPACE)){
+                    if(gState==WIN||gState==LOSE){gState=MENU;SDL_SetRelativeMouseMode(SDL_FALSE);}
+                    else if(gState==MENU){resetGame(SOLO);SDL_SetRelativeMouseMode(SDL_TRUE);}
                 }
             }
-            if(ev.type==SDL_MOUSEMOTION&&gState==MENU){mousex=ev.motion.x/2;mousey=ev.motion.y/2;}
-            if(ev.type==SDL_MOUSEBUTTONUP&&gState==MENU){mousex=ev.button.x/2;mousey=ev.button.y/2;}
+            if(ev.type==SDL_MOUSEMOTION&&gState==MENU){mousex=ev.motion.x;mousey=ev.motion.y;}
             if(ev.type==SDL_MOUSEMOTION&&gState==PLAYING){
                 player.angle+=ev.motion.xrel*SENS;
                 player.pitch-=ev.motion.yrel*1;
@@ -634,12 +634,12 @@ int main(){
             }
             if(ev.type==SDL_MOUSEBUTTONDOWN){
                 if(gState==MENU){
-                    // Use the actual click coordinates, converted to logical resolution
-                    int cx=ev.button.x/2, cy=ev.button.y/2;
-                    SDL_Rect solo={W/2-130,130,260,52};
-                    SDL_Rect team={W/2-130,198,260,52};
-                    if(cx>=solo.x&&cx<solo.x+solo.w&&cy>=solo.y&&cy<solo.y+solo.h){resetGame(SOLO);SDL_SetRelativeMouseMode(SDL_TRUE);}
-                    if(cx>=team.x&&cx<team.x+team.w&&cy>=team.y&&cy<team.y+team.h){resetGame(TEAM);SDL_SetRelativeMouseMode(SDL_TRUE);}
+                    // Compare against physical window coords (window = W*2 x H*2)
+                    int cx=ev.button.x, cy=ev.button.y;
+                    int wW=W*2, wH=H*2;
+                    // Solo button: upper area, Team: lower area — full width for reliability
+                    if(cy>wH/4 && cy<wH*3/5){ resetGame(SOLO); SDL_SetRelativeMouseMode(SDL_TRUE); }
+                    else if(cy>=wH*3/5 && cy<wH*4/5){ resetGame(TEAM); SDL_SetRelativeMouseMode(SDL_TRUE); }
                 }
                 if(gState==PLAYING&&ev.button.button==SDL_BUTTON_LEFT) playerShoot();
             }
