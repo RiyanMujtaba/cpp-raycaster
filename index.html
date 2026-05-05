@@ -582,7 +582,7 @@ document.addEventListener('keyup',e=>{delete keys[e.code];});
 document.addEventListener('mousemove',e=>{
   if(document.pointerLockElement===cv&&gState===PLAYING){
     player.angle+=e.movementX*SENS;
-    player.pitch-=e.movementY*1.2;
+    player.pitch-=e.movementY*0.6;
     if(player.pitch>200)player.pitch=200;
     if(player.pitch<-200)player.pitch=-200;
   }
