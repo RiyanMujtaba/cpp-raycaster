@@ -1,363 +1,644 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FPS PEW PEW — C++ Raycaster</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <title>FPS — Raycaster</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg:      #080a08;
-      --surface: #0d110d;
-      --accent:  #39ff14;
-      --red:     #ff2020;
-      --amber:   #ffa500;
-      --text:    #d4e8d4;
-      --muted:   #4a6a4a;
-      --border:  rgba(57,255,20,0.12);
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #000; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; font-family: 'Courier New', monospace; overflow: hidden; }
+    #hud-wrap { position: relative; }
+    canvas { display: block; image-rendering: pixelated; }
+    #hud {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      pointer-events: none;
     }
-
-    html { scroll-behavior: smooth; }
-    body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Inter', sans-serif;
-      line-height: 1.6;
-      overflow-x: hidden;
+    #crosshair {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: rgba(255,255,255,0.7); font-size: 20px; line-height: 1;
     }
-
-    /* scanlines overlay */
-    body::before {
-      content: '';
-      position: fixed; inset: 0;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent 0px, transparent 3px,
-        rgba(0,0,0,0.08) 3px, rgba(0,0,0,0.08) 4px
-      );
-      pointer-events: none; z-index: 1000;
+    #stats {
+      position: absolute; top: 10px; left: 14px;
+      color: #39ff14; font-size: 13px; text-shadow: 0 0 6px #39ff14;
     }
-
-    /* ── HERO ── */
-    #hero {
-      min-height: 100vh;
-      display: flex; flex-direction: column;
-      align-items: center; justify-content: center;
-      text-align: center;
-      padding: 60px 24px 80px;
-      position: relative; overflow: hidden;
+    #ammo {
+      position: absolute; bottom: 14px; right: 18px;
+      color: #ffb300; font-size: 14px; text-shadow: 0 0 6px #ffb300;
     }
-    .hero-bg {
-      position: absolute; inset: 0;
-      background: url('screenshot2.jpg') center/cover no-repeat;
-      filter: brightness(0.12) saturate(0.6);
-      transform: scale(1.04);
+    #kills {
+      position: absolute; top: 10px; right: 18px;
+      color: #ff3c3c; font-size: 13px; text-shadow: 0 0 6px #ff3c3c;
     }
-    .hero-bg::after {
-      content: '';
-      position: absolute; inset: 0;
-      background: radial-gradient(ellipse at center, transparent 30%, var(--bg) 80%);
+    #msg {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      color: #fff; font-size: 22px; text-align: center;
+      text-shadow: 0 0 12px #fff;
+      display: none;
     }
-    .hero-content { position: relative; z-index: 1; }
-
-    .hero-tag {
-      display: inline-flex; align-items: center; gap: 8px;
-      font-size: 10px; letter-spacing: 3px; text-transform: uppercase;
-      color: var(--accent); font-family: 'Press Start 2P', monospace;
-      border: 1px solid rgba(57,255,20,0.3);
-      background: rgba(57,255,20,0.05);
-      padding: 8px 18px; border-radius: 4px;
-      margin-bottom: 40px;
-      animation: fadeUp 0.5s ease both;
+    #controls-hint {
+      position: absolute; bottom: 14px; left: 50%;
+      transform: translateX(-50%);
+      color: rgba(200,240,200,0.4); font-size: 11px;
     }
-    .blink { animation: blink 1s step-end infinite; }
-    @keyframes blink { 50% { opacity: 0; } }
-
-    .hero-title {
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(28px, 6vw, 72px);
-      line-height: 1.3;
-      letter-spacing: 4px;
-      margin-bottom: 16px;
-      animation: fadeUp 0.5s 0.1s ease both;
+    #flash {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(255,60,60,0); pointer-events: none;
+      transition: background 0.05s;
     }
-    .hero-title .fps { color: var(--accent); text-shadow: 0 0 30px rgba(57,255,20,0.6), 0 0 60px rgba(57,255,20,0.2); }
-    .hero-title .pew { color: var(--red); text-shadow: 0 0 30px rgba(255,32,32,0.5); }
-
-    .hero-sub {
-      font-size: 13px; color: var(--muted); letter-spacing: 2px;
-      text-transform: uppercase; margin-bottom: 48px;
-      font-family: 'Press Start 2P', monospace;
-      animation: fadeUp 0.5s 0.2s ease both;
-    }
-
-    .hero-ctas {
-      display: flex; gap: 14px; justify-content: center; flex-wrap: wrap;
-      animation: fadeUp 0.5s 0.3s ease both;
-    }
-    .btn {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 14px 26px; font-family: 'Press Start 2P', monospace;
-      font-size: 10px; letter-spacing: 1px; text-decoration: none;
-      border-radius: 4px; transition: all 0.2s; cursor: pointer; border: none;
-    }
-    .btn-primary { background: var(--accent); color: #000; }
-    .btn-primary:hover { background: #5fff3a; transform: translateY(-2px); box-shadow: 0 8px 30px rgba(57,255,20,0.4); }
-    .btn-outline { background: transparent; color: var(--text); border: 1px solid rgba(255,255,255,0.15); }
-    .btn-outline:hover { border-color: rgba(57,255,20,0.4); background: rgba(57,255,20,0.05); }
-
-    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
-
-    /* ── STATS BAR ── */
-    .stats-bar {
-      display: flex; justify-content: center;
-      border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
-      background: var(--surface); position: relative; z-index: 1;
-    }
-    .stat {
-      flex: 1; max-width: 200px;
-      padding: 28px 20px; text-align: center;
-      border-right: 1px solid var(--border);
-    }
-    .stat:last-child { border-right: none; }
-    .stat-num {
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(18px, 3vw, 26px); color: var(--accent);
-      text-shadow: 0 0 20px rgba(57,255,20,0.4);
-      margin-bottom: 8px;
-    }
-    .stat-label { font-size: 10px; color: var(--muted); letter-spacing: 2px; text-transform: uppercase; }
-
-    /* ── SECTION ── */
-    section { padding: 90px 24px; position: relative; z-index: 1; }
-    .inner { max-width: 1000px; margin: 0 auto; }
-    .sec-label {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 9px; letter-spacing: 3px; text-transform: uppercase;
-      color: var(--accent); margin-bottom: 12px;
-    }
-    .sec-title {
-      font-family: 'Press Start 2P', monospace;
-      font-size: clamp(18px, 3.5vw, 32px); letter-spacing: 2px;
-      margin-bottom: 48px; line-height: 1.5;
-      color: var(--text);
-    }
-
-    /* ── SCREENSHOTS ── */
-    #screenshots { background: var(--surface); border-top: 1px solid var(--border); }
-    .shot-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-    }
-    @media (max-width: 640px) { .shot-grid { grid-template-columns: 1fr; } }
-    .shot-wrap {
-      border-radius: 8px; overflow: hidden;
-      border: 1px solid var(--border);
-      position: relative;
-      transition: border-color 0.3s, box-shadow 0.3s;
-    }
-    .shot-wrap:hover {
-      border-color: rgba(57,255,20,0.35);
-      box-shadow: 0 0 30px rgba(57,255,20,0.1);
-    }
-    .shot-wrap img { width: 100%; display: block; filter: saturate(1.1); }
-    .shot-caption {
-      position: absolute; bottom: 0; left: 0; right: 0;
-      padding: 10px 14px;
-      background: linear-gradient(transparent, rgba(0,0,0,0.8));
-      font-family: 'Press Start 2P', monospace;
-      font-size: 8px; color: var(--muted); letter-spacing: 1px;
-    }
-
-    /* ── FEATURES ── */
-    .features-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-      gap: 14px;
-    }
-    .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 8px; padding: 24px 20px;
-      transition: border-color 0.25s, transform 0.25s;
-    }
-    .feature-card:hover {
-      border-color: rgba(57,255,20,0.35);
-      transform: translateY(-3px);
-    }
-    .feature-icon { font-size: 24px; margin-bottom: 12px; }
-    .feature-name {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 10px; color: var(--accent);
-      margin-bottom: 8px; letter-spacing: 1px;
-    }
-    .feature-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
-
-    /* ── BUILD ── */
-    #build { background: var(--surface); border-top: 1px solid var(--border); }
-    .code-block {
-      background: #030503;
-      border: 1px solid var(--border);
-      border-radius: 8px; padding: 24px 28px;
-      font-family: 'Press Start 2P', monospace;
-      font-size: 11px; line-height: 2.2;
-      color: var(--accent);
-      margin-bottom: 16px;
-      overflow-x: auto;
-    }
-    .code-block .comment { color: var(--muted); }
-    .code-block .cmd { color: #fff; }
-
-    /* ── FOOTER ── */
-    footer {
-      padding: 40px 24px; text-align: center;
-      border-top: 1px solid var(--border);
-      background: var(--bg);
-    }
-    .footer-logo {
-      font-family: 'Press Start 2P', monospace;
-      font-size: 14px; color: var(--accent);
-      text-shadow: 0 0 20px rgba(57,255,20,0.4);
-      margin-bottom: 12px; letter-spacing: 3px;
-    }
-    .footer-sub { font-size: 12px; color: var(--muted); letter-spacing: 1px; }
-    .footer-sub a { color: var(--muted); text-decoration: none; transition: color 0.2s; }
-    .footer-sub a:hover { color: var(--accent); }
   </style>
 </head>
 <body>
-
-<!-- HERO -->
-<section id="hero">
-  <div class="hero-bg"></div>
-  <div class="hero-content">
-    <div class="hero-tag"><span class="blink">▶</span> C++ · RAYCASTING · SOLO</div>
-    <h1 class="hero-title">
-      <span class="fps">FPS</span><br>
-      <span class="pew">PEW PEW</span>
-    </h1>
-    <p class="hero-sub">Built from scratch. No engine.</p>
-    <div class="hero-ctas">
-      <a href="https://github.com/RiyanMujtaba/cpp-raycaster" target="_blank" class="btn btn-primary">VIEW SOURCE</a>
-      <a href="#screenshots" class="btn btn-outline">SCREENSHOTS ↓</a>
-    </div>
-  </div>
-</section>
-
-<!-- STATS -->
-<div class="stats-bar">
-  <div class="stat">
-    <div class="stat-num">10</div>
-    <div class="stat-label">Kills to Win</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">0</div>
-    <div class="stat-label">Game Engines</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">C++</div>
-    <div class="stat-label">Pure</div>
-  </div>
-  <div class="stat">
-    <div class="stat-num">60</div>
-    <div class="stat-label">FPS Target</div>
+<div id="hud-wrap">
+  <canvas id="c"></canvas>
+  <div id="hud">
+    <div id="stats">HP: <span id="hp">100</span></div>
+    <div id="kills">KILLS: <span id="kill-count">0</span></div>
+    <div id="crosshair">+</div>
+    <div id="ammo">AMMO: <span id="ammo-val">30</span> / <span id="ammo-reserve">90</span></div>
+    <div id="controls-hint">WASD / ARROWS — move &nbsp;|&nbsp; MOUSE / Q E — turn &nbsp;|&nbsp; SPACE / CLICK — shoot &nbsp;|&nbsp; R — reload</div>
+    <div id="flash"></div>
+    <div id="msg"></div>
   </div>
 </div>
 
-<!-- SCREENSHOTS -->
-<section id="screenshots">
-  <div class="inner">
-    <div class="sec-label">In Action</div>
-    <div class="sec-title">Screenshots</div>
-    <div class="shot-grid">
-      <div class="shot-wrap">
-        <img src="screenshot2.jpg" alt="Gameplay">
-        <div class="shot-caption">Gameplay — Enemy in sight. Minimap top-right.</div>
-      </div>
-      <div class="shot-wrap">
-        <img src="screenshot1.jpg" alt="Game Over screen">
-        <div class="shot-caption">Game Over — Kills: 2/10. Time: 0:32.</div>
-      </div>
-    </div>
-  </div>
-</section>
+<script>
+// ── Canvas setup ────────────────────────────────────────────────
+const canvas = document.getElementById('c');
+const ctx    = canvas.getContext('2d');
+const W = 800, H = 500;
+canvas.width = W; canvas.height = H;
+canvas.style.width  = Math.min(W, window.innerWidth)  + 'px';
+canvas.style.height = Math.min(H, window.innerHeight * 0.9) + 'px';
 
-<!-- FEATURES -->
-<section id="features">
-  <div class="inner">
-    <div class="sec-label">What's in it</div>
-    <div class="sec-title">Features</div>
-    <div class="features-grid">
-      <div class="feature-card">
-        <div class="feature-icon">🧱</div>
-        <div class="feature-name">Raycasting</div>
-        <div class="feature-desc">Wolfenstein-style 3D rendering — no 3D engine, just maths and rays cast per column of pixels.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🤖</div>
-        <div class="feature-name">Enemy AI</div>
-        <div class="feature-desc">Enemies that roam the map, detect the player, and chase them down. 10 kills to clear the level.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🗺️</div>
-        <div class="feature-name">Minimap</div>
-        <div class="feature-desc">Real-time minimap rendered in the corner showing walls, player position and enemy locations.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">❤️</div>
-        <div class="feature-name">HP System</div>
-        <div class="feature-desc">Health bar tracks damage taken. Hit 0% and it's game over — stats screen shows kills and time.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">🎯</div>
-        <div class="feature-name">Shooting</div>
-        <div class="feature-desc">Hitscan shooting with visual feedback. Line up the crosshair and pew pew.</div>
-      </div>
-      <div class="feature-card">
-        <div class="feature-icon">⚡</div>
-        <div class="feature-name">No Dependencies</div>
-        <div class="feature-desc">Built with C++ and SDL2 only. Compiles on Mac, Linux and Windows with a single make command.</div>
-      </div>
-    </div>
-  </div>
-</section>
+// ── Map (1=wall, 0=floor, 2=door) ──────────────────────────────
+const MAP_W = 16, MAP_H = 16;
+const MAP = [
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+  1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,1,
+  1,0,1,1,0,0,1,0,1,1,1,0,1,0,0,1,
+  1,0,1,0,0,0,2,0,0,0,1,0,1,0,0,1,
+  1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,1,
+  1,0,1,1,1,0,1,1,2,1,1,0,1,1,0,1,
+  1,0,0,0,1,0,0,0,0,0,0,0,1,0,0,1,
+  1,1,2,1,1,0,1,1,1,1,0,0,1,0,1,1,
+  1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,
+  1,0,1,0,1,0,1,0,0,1,1,2,1,0,0,1,
+  1,0,1,0,1,0,0,0,0,0,0,0,1,0,0,1,
+  1,0,1,0,0,0,1,0,1,0,1,0,0,0,0,1,
+  1,0,0,0,1,1,1,0,1,0,1,1,1,0,1,1,
+  1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,1,
+  1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,1,
+  1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
+];
+const cell = (x, y) => {
+  const mx = Math.floor(x), my = Math.floor(y);
+  if (mx < 0 || mx >= MAP_W || my < 0 || my >= MAP_H) return 1;
+  return MAP[my * MAP_W + mx];
+};
+const isWall = (x, y) => cell(x, y) === 1;
 
-<!-- BUILD -->
-<section id="build">
-  <div class="inner">
-    <div class="sec-label">Run It</div>
-    <div class="sec-title">Build & Play</div>
-    <div class="code-block">
-      <span class="comment"># Clone the repo</span><br>
-      <span class="cmd">git clone https://github.com/RiyanMujtaba/cpp-raycaster</span><br>
-      <span class="cmd">cd cpp-raycaster</span><br><br>
-      <span class="comment"># Install SDL2 (Mac)</span><br>
-      <span class="cmd">brew install sdl2 sdl2_image sdl2_ttf</span><br><br>
-      <span class="comment"># Build and run</span><br>
-      <span class="cmd">make && ./raycaster</span>
-    </div>
-    <div class="code-block">
-      <span class="comment"># Controls</span><br>
-      <span class="cmd">W A S D &nbsp;&nbsp;&nbsp; Move</span><br>
-      <span class="cmd">← → &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Look</span><br>
-      <span class="cmd">SPACE &nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Shoot</span><br>
-      <span class="cmd">ESC &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Quit</span>
-    </div>
-  </div>
-</section>
+// ── Wall colors ─────────────────────────────────────────────────
+const WALL_COLORS = {
+  ns_light: '#8b4513', ns_dark: '#6b3410',
+  ew_light: '#a0522d', ew_dark: '#7a3f22',
+  door_light: '#8b6914', door_dark: '#6b5010',
+};
 
-<footer>
-  <div class="footer-logo">FPS PEW PEW</div>
-  <p class="footer-sub">
-    Built by <a href="https://riyanmujtaba.github.io" target="_blank">Riyan Mujtaba</a>
-    &nbsp;·&nbsp;
-    <a href="https://github.com/RiyanMujtaba/cpp-raycaster" target="_blank">GitHub</a>
-  </p>
-</footer>
+// ── Player ──────────────────────────────────────────────────────
+const player = {
+  x: 1.5, y: 1.5, angle: 0,
+  hp: 100, maxHp: 100,
+  ammo: 30, reserve: 90,
+  kills: 0,
+  speed: 0.055, turnSpeed: 0.042,
+  bobPhase: 0, bobY: 0,
+  shooting: false, shootFrame: 0,
+  reloading: false, reloadFrame: 0,
+  dead: false,
+};
 
+// ── Enemies ─────────────────────────────────────────────────────
+const ENEMY_SPAWNS = [
+  {x:7.5,y:3.5},{x:13.5,y:2.5},{x:3.5,y:7.5},
+  {x:11.5,y:8.5},{x:5.5,y:11.5},{x:9.5,y:13.5},
+  {x:13.5,y:11.5},{x:2.5,y:13.5},{x:7.5,y:10.5},
+];
+let enemies = ENEMY_SPAWNS.map((s, i) => ({
+  x: s.x, y: s.y,
+  hp: 3, maxHp: 3,
+  angle: Math.random() * Math.PI * 2,
+  speed: 0.018 + Math.random() * 0.01,
+  state: 'patrol',   // patrol | chase | attack | dead
+  alertTimer: 0,
+  attackTimer: 0,
+  hitFlash: 0,
+  id: i,
+}));
+
+// ── Sprites (pickups) ───────────────────────────────────────────
+let pickups = [
+  { x:3.5,y:3.5,  type:'ammo',   taken:false },
+  { x:11.5,y:5.5, type:'health', taken:false },
+  { x:6.5,y:12.5, type:'ammo',   taken:false },
+  { x:14.5,y:13.5,type:'health', taken:false },
+];
+
+// ── Keys ────────────────────────────────────────────────────────
+const keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.code] = true;
+  if (e.code === 'Space') { e.preventDefault(); tryShoot(); }
+  if (e.code === 'KeyR')  reload();
+});
+window.addEventListener('keyup',   e => { delete keys[e.code]; });
+canvas.addEventListener('click',   () => { tryShoot(); canvas.requestPointerLock?.(); });
+document.addEventListener('pointerlockchange', () => {});
+document.addEventListener('mousemove', e => {
+  if (document.pointerLockElement === canvas) {
+    player.angle += e.movementX * 0.002;
+  }
+});
+
+// ── Shooting ────────────────────────────────────────────────────
+function tryShoot() {
+  if (player.dead || player.reloading) return;
+  if (player.ammo <= 0) { reload(); return; }
+  if (player.shootFrame > 0) return;
+  player.shooting = true;
+  player.shootFrame = 12;
+  player.ammo--;
+  updateHUD();
+
+  // Raycast for hit
+  const SHOOT_SPREAD = 0.025;
+  const sa = player.angle + (Math.random() - 0.5) * SHOOT_SPREAD;
+  let hit = null, minDist = Infinity;
+  for (const en of enemies) {
+    if (en.state === 'dead') continue;
+    const dx = en.x - player.x, dy = en.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    const angle = Math.atan2(dy, dx);
+    const diff = Math.abs(normalizeAngle(angle - sa));
+    if (diff < 0.18 && dist < minDist) {
+      // Check no wall between
+      if (!wallBetween(player.x, player.y, en.x, en.y)) {
+        hit = en; minDist = dist;
+      }
+    }
+  }
+  if (hit) {
+    hit.hp--;
+    hit.hitFlash = 8;
+    hit.state = 'chase';
+    if (hit.hp <= 0) {
+      hit.state = 'dead';
+      player.kills++;
+      updateHUD();
+    }
+  }
+}
+
+function reload() {
+  if (player.reloading || player.reserve <= 0 || player.ammo === 30) return;
+  player.reloading = true;
+  player.reloadFrame = 60;
+}
+
+function wallBetween(x1, y1, x2, y2) {
+  const steps = Math.ceil(Math.hypot(x2 - x1, y2 - y1) * 8);
+  for (let i = 1; i < steps; i++) {
+    const t = i / steps;
+    if (isWall(x1 + (x2-x1)*t, y1 + (y2-y1)*t)) return true;
+  }
+  return false;
+}
+
+function normalizeAngle(a) {
+  while (a >  Math.PI) a -= Math.PI * 2;
+  while (a < -Math.PI) a += Math.PI * 2;
+  return a;
+}
+
+// ── Raycaster ───────────────────────────────────────────────────
+const FOV    = Math.PI / 3;   // 60°
+const RAYS   = W;
+const HALF_H = H / 2;
+const zBuf   = new Float32Array(RAYS);
+
+function castRays() {
+  const imgData = ctx.createImageData(W, H);
+  const pixels  = imgData.data;
+
+  // Sky gradient
+  for (let y = 0; y < HALF_H; y++) {
+    const t = y / HALF_H;
+    const r = Math.floor(10  + t * 20);
+    const g = Math.floor(10  + t * 20);
+    const b = Math.floor(20  + t * 40);
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      pixels[i] = r; pixels[i+1] = g; pixels[i+2] = b; pixels[i+3] = 255;
+    }
+  }
+  // Floor
+  for (let y = HALF_H; y < H; y++) {
+    const t = (y - HALF_H) / HALF_H;
+    const c = Math.floor(20 + t * 25);
+    for (let x = 0; x < W; x++) {
+      const i = (y * W + x) * 4;
+      pixels[i] = c; pixels[i+1] = c; pixels[i+2] = c; pixels[i+3] = 255;
+    }
+  }
+
+  for (let col = 0; col < RAYS; col++) {
+    const rayAngle = player.angle - FOV / 2 + (col / RAYS) * FOV;
+    const cos = Math.cos(rayAngle), sin = Math.sin(rayAngle);
+
+    let dist = 0, hit = false, side = 0, doorHit = false;
+    let mapX = Math.floor(player.x), mapY = Math.floor(player.y);
+    const deltaX = Math.abs(1 / cos), deltaY = Math.abs(1 / sin);
+    const stepX = cos < 0 ? -1 : 1, stepY = sin < 0 ? -1 : 1;
+    let sideDistX = cos < 0 ? (player.x - mapX) * deltaX : (mapX + 1 - player.x) * deltaX;
+    let sideDistY = sin < 0 ? (player.y - mapY) * deltaY : (mapY + 1 - player.y) * deltaY;
+
+    for (let depth = 0; depth < 32; depth++) {
+      if (sideDistX < sideDistY) { sideDistX += deltaX; mapX += stepX; side = 0; }
+      else                        { sideDistY += deltaY; mapY += stepY; side = 1; }
+      const c = cell(mapX, mapY);
+      if (c === 1 || c === 2) { hit = true; doorHit = c === 2; break; }
+    }
+
+    dist = side === 0 ? (mapX - player.x + (1 - stepX) / 2) / cos
+                      : (mapY - player.y + (1 - stepY) / 2) / sin;
+    dist = Math.max(0.001, dist);
+    // Fish-eye fix
+    const fixedDist = dist * Math.cos(rayAngle - player.angle);
+    zBuf[col] = fixedDist;
+
+    const wallH = Math.floor(H / fixedDist);
+    const bobOffset = Math.floor(player.bobY * 10);
+    const top    = Math.max(0, Math.floor(HALF_H - wallH / 2) + bobOffset);
+    const bottom = Math.min(H - 1, Math.floor(HALF_H + wallH / 2) + bobOffset);
+
+    // Wall shade
+    let shade = Math.max(0, Math.min(1, 1 - fixedDist / 14));
+    if (side === 1) shade *= 0.7;
+
+    let [r, g, b] = doorHit
+      ? (side === 0 ? [139,105,20] : [107,80,16])
+      : (side === 0 ? [139,69,19]  : [107,53,15]);
+
+    r = Math.floor(r * shade); g = Math.floor(g * shade); b = Math.floor(b * shade);
+
+    for (let y = top; y <= bottom; y++) {
+      const i = (y * W + col) * 4;
+      pixels[i] = r; pixels[i+1] = g; pixels[i+2] = b; pixels[i+3] = 255;
+    }
+  }
+
+  ctx.putImageData(imgData, 0, 0);
+}
+
+// ── Sprite rendering ────────────────────────────────────────────
+function drawSprites() {
+  // Combine enemies + pickups into sprite list
+  const sprites = [];
+
+  for (const en of enemies) {
+    if (en.state === 'dead') {
+      sprites.push({ x: en.x, y: en.y, type: 'dead_enemy', en });
+    } else {
+      sprites.push({ x: en.x, y: en.y, type: 'enemy', en });
+    }
+  }
+  for (const pk of pickups) {
+    if (!pk.taken) sprites.push({ x: pk.x, y: pk.y, type: pk.type });
+  }
+
+  // Sort far to near
+  sprites.sort((a, b) => {
+    const da = Math.hypot(a.x - player.x, a.y - player.y);
+    const db = Math.hypot(b.x - player.x, b.y - player.y);
+    return db - da;
+  });
+
+  for (const sp of sprites) {
+    const dx = sp.x - player.x, dy = sp.y - player.y;
+    const dist = Math.hypot(dx, dy);
+    if (dist < 0.3) continue;
+
+    const spriteAngle = Math.atan2(dy, dx) - player.angle;
+    const normAngle = normalizeAngle(spriteAngle);
+    if (Math.abs(normAngle) > FOV * 0.9) continue;
+
+    const screenX = Math.floor((0.5 + normAngle / FOV) * W);
+    const fixedDist = dist * Math.cos(normAngle);
+    const spriteH = Math.floor(H / fixedDist);
+    const bobOffset = Math.floor(player.bobY * 10);
+    const top  = Math.floor(HALF_H - spriteH / 2) + bobOffset;
+    const spriteW = spriteH;
+    const left = screenX - spriteW / 2;
+
+    if (sp.type === 'enemy' || sp.type === 'dead_enemy') {
+      drawEnemy(sp.en, left, top, spriteW, spriteH, fixedDist);
+    } else if (sp.type === 'ammo') {
+      drawPickup(left, top, spriteW, spriteH, fixedDist, '#ffb300', 'A');
+    } else if (sp.type === 'health') {
+      drawPickup(left, top, spriteW, spriteH, fixedDist, '#ff4444', '+');
+    }
+  }
+}
+
+function drawEnemy(en, left, top, sw, sh, dist) {
+  const shade = Math.max(0.2, Math.min(1, 1 - dist / 12));
+  const cols  = Math.min(sw, W);
+
+  for (let col = 0; col < cols; col++) {
+    const screenCol = Math.floor(left + col);
+    if (screenCol < 0 || screenCol >= W) continue;
+    if (zBuf[screenCol] < dist) continue;
+
+    const tx = col / cols; // 0..1 across sprite
+
+    for (let row = 0; row < sh; row++) {
+      const screenRow = top + row;
+      if (screenRow < 0 || screenRow >= H) continue;
+      const ty = row / sh;
+
+      // Simple blocky humanoid silhouette
+      let r = 0, g = 0, b = 0, a = 0;
+
+      if (en.state === 'dead') {
+        // Dead — flat puddle
+        if (ty > 0.75 && tx > 0.2 && tx < 0.8) {
+          r = Math.floor(100 * shade); g = 0; b = 0; a = 255;
+        }
+      } else {
+        // Head
+        if (ty < 0.22 && tx > 0.3 && tx < 0.7) {
+          const flash = en.hitFlash > 0 ? 200 : 0;
+          r = Math.floor((180 + flash) * shade);
+          g = Math.floor((120 - flash * 0.5) * shade);
+          b = Math.floor(80 * shade); a = 255;
+        }
+        // Body
+        else if (ty >= 0.22 && ty < 0.62 && tx > 0.2 && tx < 0.8) {
+          const flash = en.hitFlash > 0 ? 180 : 0;
+          r = Math.floor((60 + flash) * shade);
+          g = Math.floor((100 - flash * 0.3) * shade);
+          b = Math.floor(60 * shade); a = 255;
+        }
+        // Legs
+        else if (ty >= 0.62 && ((tx > 0.2 && tx < 0.42) || (tx > 0.58 && tx < 0.8))) {
+          r = Math.floor(40 * shade); g = Math.floor(40 * shade); b = Math.floor(80 * shade); a = 255;
+        }
+        // Arms
+        else if (ty >= 0.25 && ty < 0.55 && (tx < 0.2 || tx > 0.8)) {
+          r = Math.floor(60 * shade); g = Math.floor(100 * shade); b = Math.floor(60 * shade); a = 255;
+        }
+        // Eyes (alert indicator)
+        else if (ty > 0.06 && ty < 0.14 && ((tx > 0.36 && tx < 0.44) || (tx > 0.56 && tx < 0.64))) {
+          if (en.state === 'chase' || en.state === 'attack') {
+            r = 255; g = 50; b = 50; a = 255;
+          } else {
+            r = 200; g = 200; b = 50; a = 255;
+          }
+        }
+      }
+
+      if (a === 0) continue;
+      ctx.fillStyle = `rgba(${r},${g},${b},1)`;
+      ctx.fillRect(screenCol, screenRow, 1, 1);
+    }
+  }
+}
+
+function drawPickup(left, top, sw, sh, dist, color, label) {
+  const shade = Math.max(0.3, Math.min(1, 1 - dist / 10));
+  const cx = left + sw / 2, cy = top + sh / 2;
+  const r  = Math.max(3, sw * 0.18);
+
+  // Check z-buffer at center
+  const sc = Math.floor(cx);
+  if (sc >= 0 && sc < W && zBuf[sc] < dist) return;
+
+  ctx.globalAlpha = shade;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.font = `bold ${Math.max(8, r)}px monospace`;
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(label, cx, cy);
+  ctx.globalAlpha = 1; ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+}
+
+// ── Weapon draw ─────────────────────────────────────────────────
+function drawWeapon() {
+  const cx = W / 2, cy = H;
+  const bobX = Math.sin(player.bobPhase) * 8;
+  const bobYw = Math.abs(Math.cos(player.bobPhase)) * 5;
+
+  let kickY = 0, kickX = 0;
+  if (player.shootFrame > 0) {
+    kickY = -Math.sin((player.shootFrame / 12) * Math.PI) * 28;
+    kickX = (Math.random() - 0.5) * 4;
+  }
+  if (player.reloading) {
+    kickY = Math.sin((player.reloadFrame / 60) * Math.PI * 2) * 18;
+  }
+
+  const bx = cx + bobX + kickX;
+  const by = cy + bobYw + kickY;
+
+  // Gun body
+  ctx.fillStyle = '#555';
+  ctx.fillRect(bx - 18, by - 100, 36, 90);
+  ctx.fillStyle = '#444';
+  ctx.fillRect(bx - 22, by - 60, 8, 50);  // grip
+  ctx.fillStyle = '#333';
+  ctx.fillRect(bx - 18, by - 105, 8, 14); // barrel top
+  ctx.fillStyle = '#666';
+  ctx.fillRect(bx - 14, by - 108, 26, 10); // slide
+
+  // Muzzle flash
+  if (player.shootFrame > 8) {
+    ctx.fillStyle = `rgba(255,200,50,${(player.shootFrame - 8) / 4 * 0.9})`;
+    ctx.beginPath(); ctx.arc(bx + 5, by - 106, 14, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = `rgba(255,255,200,0.8)`;
+    ctx.beginPath(); ctx.arc(bx + 5, by - 106, 7, 0, Math.PI * 2); ctx.fill();
+  }
+
+  // Reload indicator
+  if (player.reloading) {
+    ctx.fillStyle = 'rgba(255,179,0,0.7)';
+    ctx.font = '14px "Courier New"';
+    ctx.textAlign = 'center';
+    ctx.fillText('RELOADING...', W / 2, H - 60);
+    ctx.textAlign = 'left';
+  }
+}
+
+// ── Damage flash ────────────────────────────────────────────────
+const flashEl = document.getElementById('flash');
+function damageFlash() {
+  flashEl.style.background = 'rgba(255,50,50,0.35)';
+  setTimeout(() => flashEl.style.background = 'rgba(255,60,60,0)', 120);
+}
+
+// ── HUD update ──────────────────────────────────────────────────
+function updateHUD() {
+  document.getElementById('hp').textContent         = Math.max(0, player.hp);
+  document.getElementById('ammo-val').textContent   = player.ammo;
+  document.getElementById('ammo-reserve').textContent = player.reserve;
+  document.getElementById('kill-count').textContent = player.kills;
+  document.getElementById('hp').style.color = player.hp <= 30 ? '#ff3c3c' : '#39ff14';
+}
+
+// ── Enemy AI ────────────────────────────────────────────────────
+function updateEnemies() {
+  for (const en of enemies) {
+    if (en.state === 'dead') continue;
+    if (en.hitFlash > 0) en.hitFlash--;
+
+    const dx = player.x - en.x, dy = player.y - en.y;
+    const dist = Math.hypot(dx, dy);
+    const canSee = dist < 7 && !wallBetween(en.x, en.y, player.x, player.y);
+
+    if (canSee) {
+      en.state = en.alertTimer > 0 ? 'chase' : 'chase';
+      en.alertTimer = 120;
+    } else if (en.alertTimer > 0) {
+      en.alertTimer--;
+      if (en.alertTimer === 0) en.state = 'patrol';
+    }
+
+    if (en.state === 'chase') {
+      if (dist < 0.7) {
+        // Attack player
+        en.attackTimer++;
+        if (en.attackTimer % 55 === 0) {
+          player.hp -= 12;
+          damageFlash();
+          updateHUD();
+          if (player.hp <= 0) { player.dead = true; showMessage('YOU DIED', '#ff3c3c'); }
+        }
+      } else {
+        // Move toward player
+        const angle = Math.atan2(dy, dx);
+        const nx = en.x + Math.cos(angle) * en.speed;
+        const ny = en.y + Math.sin(angle) * en.speed;
+        if (!isWall(nx, en.y)) en.x = nx;
+        if (!isWall(en.x, ny)) en.y = ny;
+      }
+    } else {
+      // Patrol — random walk
+      en.angle += (Math.random() - 0.5) * 0.06;
+      const nx = en.x + Math.cos(en.angle) * en.speed * 0.5;
+      const ny = en.y + Math.sin(en.angle) * en.speed * 0.5;
+      if (!isWall(nx, en.y)) en.x = nx; else en.angle += Math.PI * 0.5;
+      if (!isWall(en.x, ny)) en.y = ny; else en.angle += Math.PI * 0.5;
+    }
+  }
+}
+
+// ── Pickup collection ───────────────────────────────────────────
+function checkPickups() {
+  for (const pk of pickups) {
+    if (pk.taken) continue;
+    if (Math.hypot(pk.x - player.x, pk.y - player.y) < 0.6) {
+      pk.taken = true;
+      if (pk.type === 'ammo') {
+        player.reserve = Math.min(180, player.reserve + 30);
+      } else {
+        player.hp = Math.min(player.maxHp, player.hp + 40);
+      }
+      updateHUD();
+    }
+  }
+}
+
+// ── Win condition ───────────────────────────────────────────────
+function checkWin() {
+  if (enemies.every(e => e.state === 'dead')) {
+    showMessage('MISSION COMPLETE! 🎉\nAll enemies eliminated.\nRefresh to play again.', '#39ff14');
+    player.dead = true;
+  }
+}
+
+// ── Message overlay ─────────────────────────────────────────────
+function showMessage(text, color) {
+  const el = document.getElementById('msg');
+  el.style.display = 'block';
+  el.style.color   = color;
+  el.innerHTML     = text.replace('\n', '<br>');
+}
+
+// ── Movement ────────────────────────────────────────────────────
+function movePlayer() {
+  if (player.dead) return;
+
+  const s = player.speed;
+  const cos = Math.cos(player.angle), sin = Math.sin(player.angle);
+  let moved = false;
+
+  const tryMove = (dx, dy) => {
+    const nx = player.x + dx, ny = player.y + dy;
+    const margin = 0.25;
+    if (!isWall(nx + margin * Math.sign(dx), player.y) && !isWall(nx - margin * Math.sign(dx), player.y)) player.x = nx;
+    if (!isWall(player.x, ny + margin * Math.sign(dy)) && !isWall(player.x, ny - margin * Math.sign(dy))) player.y = ny;
+  };
+
+  if (keys['KeyW'] || keys['ArrowUp'])    { tryMove( cos * s,  sin * s); moved = true; }
+  if (keys['KeyS'] || keys['ArrowDown'])  { tryMove(-cos * s, -sin * s); moved = true; }
+  if (keys['KeyA'])                        { tryMove( sin * s, -cos * s); moved = true; }
+  if (keys['KeyD'])                        { tryMove(-sin * s,  cos * s); moved = true; }
+  if (keys['ArrowLeft']  || keys['KeyQ']) player.angle -= player.turnSpeed;
+  if (keys['ArrowRight'] || keys['KeyE']) player.angle += player.turnSpeed;
+
+  // Head bob
+  if (moved) {
+    player.bobPhase += 0.12;
+    player.bobY = Math.sin(player.bobPhase) * 0.03;
+  } else {
+    player.bobPhase += 0.02;
+    player.bobY *= 0.85;
+  }
+
+  // Shoot cooldown
+  if (player.shootFrame > 0) player.shootFrame--;
+  else player.shooting = false;
+
+  // Reload
+  if (player.reloading) {
+    player.reloadFrame--;
+    if (player.reloadFrame <= 0) {
+      const needed = 30 - player.ammo;
+      const take   = Math.min(needed, player.reserve);
+      player.ammo    += take;
+      player.reserve -= take;
+      player.reloading = false;
+      updateHUD();
+    }
+  }
+}
+
+// ── Main loop ────────────────────────────────────────────────────
+function loop() {
+  movePlayer();
+  updateEnemies();
+  checkPickups();
+  checkWin();
+
+  castRays();
+  drawSprites();
+  drawWeapon();
+
+  requestAnimationFrame(loop);
+}
+
+updateHUD();
+loop();
+</script>
 </body>
 </html>
