@@ -14,7 +14,7 @@ canvas{display:block;image-rendering:pixelated;image-rendering:crisp-edges;curso
 </head>
 <body>
 <canvas id="c"></canvas>
-<div id="msg">CLICK TO LOCK MOUSE · WASD MOVE · MOUSE LOOK · LMB SHOOT · ESC BACK</div>
+<div id="msg">CLICK TO LOCK MOUSE · WASD MOVE · MOUSE LOOK (UP/DOWN) · LMB SHOOT · ESC BACK</div>
 <script>
 // ── Constants ──────────────────────────────────────────────────────────────────
 const W=640,H=360,TEX=64,MW=28,MH=28,CAM=0.66,SENS=0.0022;
@@ -525,7 +525,7 @@ function renderMenu(t){
   cx.fillStyle='rgba(180,100,200,0.8)';cx.font='11px monospace';cx.fillText('You + 4 allies vs 10 enemies',W/2,252);
   // Controls
   cx.fillStyle='rgba(80,120,120,0.85)';cx.font='9px monospace';
-  cx.fillText('WASD move  ·  Mouse look  ·  LMB / SPACE shoot  ·  ESC back',W/2,318);
+  cx.fillText('WASD move  ·  Mouse X/Y look  ·  LMB shoot  ·  ESC back',W/2,318);
   // Scanlines
   cx.fillStyle='rgba(0,0,0,0.08)';
   for(let y=0;y<H;y+=2)cx.fillRect(0,y,W,1);
@@ -587,18 +587,6 @@ document.addEventListener('mousemove',e=>{
     if(player.pitch<-200)player.pitch=-200;
   }
 });
-cv.addEventListener('click',()=>{
-  initAudio();genAudio();
-  if(gState===MENU){
-    // detect which button (y position on canvas)
-    cv.requestPointerLock();
-    // click handled in mousedown
-  }
-  if(gState===PLAYING){
-    playerShoot();
-    if(document.pointerLockElement!==cv)cv.requestPointerLock();
-  }
-});
 cv.addEventListener('mousedown',e=>{
   initAudio();genAudio();
   if(gState===MENU){
@@ -606,8 +594,12 @@ cv.addEventListener('mousedown',e=>{
     const ry=(e.clientY-rect.top)/rect.height*H;
     if(ry>114&&ry<194){resetGame(SOLO);cv.requestPointerLock();}
     else if(ry>=204&&ry<284){resetGame(TEAM);cv.requestPointerLock();}
+    else cv.requestPointerLock();
   }
-  if(gState===PLAYING&&e.button===0)playerShoot();
+  if(gState===PLAYING){
+    if(document.pointerLockElement!==cv)cv.requestPointerLock();
+    if(e.button===0)playerShoot();
+  }
   if(gState===WIN||gState===LOSE){gState=MENU;document.exitPointerLock&&document.exitPointerLock();}
 });
 
